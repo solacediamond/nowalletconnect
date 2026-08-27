@@ -254,14 +254,17 @@
     border-radius: 12px;
     margin-bottom: 12px;
     max-width: 100%;
-    width: auto;
+    width: fit-content;
+}
+
+#qrcode img {
+    max-width: 100%;
+    height: auto;
 }
 
 @media (max-width: 600px) {
     #qrcode {
-        max-width: 90vw;
-        width: 280px;
-        max-width: 280px;
+        padding: 8px;
     }
 }
 
@@ -708,12 +711,12 @@
                     <button class="network-btn active" onclick="selectNetwork('polygon')" style="padding: 24px;">
                         <img src="polygon.png" alt="Polygon" style="width: 50px; height: 50px; margin-bottom: 8px; object-fit: contain;">
                         <div style="font-weight: 700;">Polygon</div>
-                        <div style="font-size: 0.8rem; color: var(--muted);">Fast & Cheap</div>
+                        <div style="font-size: 0.8rem; color: var(--muted);"></div>
                     </button>
                     <button class="network-btn" onclick="selectNetwork('solana')" style="padding: 24px;">
                         <img src="solana.png" alt="Solana" style="width: 50px; height: 50px; margin-bottom: 8px; object-fit: contain;">
                         <div style="font-weight: 700;">Solana</div>
-                        <div style="font-size: 0.8rem; color: var(--muted);">Instant</div>
+                        <div style="font-size: 0.8rem; color: var(--muted);"></div>
                     </button>
                 </div>
 
