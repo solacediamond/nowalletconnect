@@ -1,0 +1,1347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Crypto Payment Receiver</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --primary: #00d4ff;
+            --secondary: #7c3aed;
+            --bg: #0f1419;
+            --card: #1a1f2e;
+            --border: rgba(148, 163, 184, 0.12);
+            --text: #f1f5f9;
+            --muted: #94a3b8;
+            --success: #10b981;
+        }
+
+        body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+            background: linear-gradient(135deg, var(--bg), #1a2847);
+            color: var(--text);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            position: relative;
+        }
+
+        .settings-btn {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.2), rgba(124, 58, 237, 0.2));
+            border: 1.5px solid rgba(0, 212, 255, 0.4);
+            font-size: 1.4rem;
+            cursor: pointer;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.15);
+            transition: all 0.3s ease;
+            z-index: 100;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            line-height: 1;
+            backdrop-filter: blur(8px);
+        }
+
+        .settings-btn:hover {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.35), rgba(124, 58, 237, 0.35));
+            border-color: rgba(0, 212, 255, 0.6);
+            box-shadow: 0 6px 24px rgba(0, 212, 255, 0.25);
+            transform: scale(1.08);
+        }
+
+        .settings-btn:active {
+            transform: scale(0.96);
+        }
+
+        .card {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 32px;
+            margin-bottom: 20px;
+            backdrop-filter: blur(20px);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            text-align: center;
+            font-size: 2rem;
+            margin-bottom: 8px;
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .subtitle {
+            text-align: center;
+            color: var(--muted);
+            margin-bottom: 32px;
+            font-size: 0.95rem;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-size: 0.85rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 0.06em;
+            color: var(--muted);
+            margin-bottom: 8px;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 16px;
+            background: rgba(30, 41, 59, 0.8);
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--text);
+            font-size: 1rem;
+            font-family: 'JetBrains Mono', monospace;
+            transition: all 0.3s;
+        }
+
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.1);
+        }
+
+        .network-buttons {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .network-btn {
+            padding: 14px;
+            background: transparent;
+            border: 2px solid var(--border);
+            border-radius: 10px;
+            color: var(--muted);
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-size: 0.9rem;
+        }
+
+        .network-btn:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .network-btn.active {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(124, 58, 237, 0.1));
+            border-color: var(--primary);
+            color: var(--primary);
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+        }
+
+        button {
+            width: 100%;
+            padding: 14px;
+            border: none;
+            border-radius: 10px;
+            font-weight: 700;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-bottom: 10px;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: var(--bg);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(0, 212, 255, 0.3);
+        }
+
+        .btn-primary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-secondary {
+            background: transparent;
+            border: 2px solid var(--border);
+            color: var(--muted);
+        }
+
+        .btn-secondary:hover:not(:disabled) {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        .btn-secondary:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .btn-success {
+            background: linear-gradient(135deg, var(--success), #059669);
+            color: white;
+        }
+
+        .btn-success:hover:not(:disabled) {
+            transform: translateY(-2px);
+            box-shadow: 0 12px 32px rgba(16, 185, 129, 0.3);
+        }
+
+        .btn-success:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+
+        .section {
+            display: none;
+        }
+
+        .section.active {
+            display: block;
+            animation: fadeIn 0.4s ease;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(12px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .qr-box {
+            background: linear-gradient(135deg, rgba(0, 212, 255, 0.05), rgba(124, 58, 237, 0.05));
+            border: 2px solid var(--border);
+            border-radius: 16px;
+            padding: 24px;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        #qrcode {
+            display: inline-flex;
+            background: white;
+            padding: 12px;
+            border-radius: 12px;
+            margin-bottom: 12px;
+        }
+
+        #qrcode svg {
+            max-width: 100%;
+            display: block;
+        }
+
+        .qr-hint {
+            font-size: 0.85rem;
+            color: var(--muted);
+            margin-bottom: 20px;
+        }
+
+        .address-display {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            margin-bottom: 20px;
+            word-break: break-all;
+        }
+
+        .address-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.75rem;
+            color: var(--primary);
+            word-break: break-all;
+            line-height: 1.4;
+        }
+
+        .copy-btn {
+            padding: 8px 12px;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 8px;
+            color: var(--primary);
+            font-weight: 600;
+            font-size: 0.75rem;
+            cursor: pointer;
+            white-space: nowrap;
+            transition: all 0.3s;
+            margin: 0;
+            width: 100%;
+        }
+
+        .copy-btn:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        .amount-section {
+            background: rgba(16, 185, 129, 0.05);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .amount-section input {
+            margin-bottom: 0;
+        }
+
+        .success-icon {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            background: linear-gradient(135deg, var(--success), #059669);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2.5rem;
+            animation: pop 0.6s cubic-bezier(0.34, 1.56, 0.64, 1);
+        }
+
+        @keyframes pop {
+            0% { transform: scale(0); }
+            100% { transform: scale(1); }
+        }
+
+        .success-text {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .success-text h2 {
+            font-size: 1.5rem;
+            margin-bottom: 8px;
+        }
+
+        .success-text p {
+            color: var(--muted);
+        }
+
+        .tx-box {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            margin-bottom: 20px;
+            text-align: center;
+            word-break: break-all;
+        }
+
+        .tx-label {
+            font-size: 0.75rem;
+            color: var(--muted);
+            text-transform: uppercase;
+            margin-bottom: 8px;
+        }
+
+        .tx-hash {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--primary);
+            word-break: break-all;
+        }
+
+        .tx-link {
+            color: var(--primary);
+            text-decoration: none;
+            font-weight: 600;
+        }
+
+        .tx-link:hover {
+            text-decoration: underline;
+        }
+
+        .info-box {
+            background: rgba(0, 212, 255, 0.05);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: var(--primary);
+            margin-bottom: 20px;
+        }
+
+        .warning-box {
+            background: rgba(239, 68, 68, 0.1);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            border-radius: 10px;
+            padding: 12px 16px;
+            font-size: 0.85rem;
+            color: #fca5a5;
+            margin-bottom: 20px;
+        }
+
+        .step-label {
+            display: inline-block;
+            background: rgba(0, 212, 255, 0.1);
+            border: 1px solid rgba(0, 212, 255, 0.3);
+            color: var(--primary);
+            padding: 4px 10px;
+            border-radius: 6px;
+            font-size: 0.7rem;
+            font-weight: 600;
+            text-transform: uppercase;
+            margin-bottom: 16px;
+        }
+
+        .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid var(--border);
+            border-top-color: var(--primary);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .status-log {
+            background: rgba(30, 41, 59, 0.8);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 16px;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.7rem;
+            color: var(--muted);
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 20px;
+            line-height: 1.6;
+        }
+
+        .log-entry {
+            margin-bottom: 6px;
+            display: flex;
+            gap: 8px;
+        }
+
+        .log-icon {
+            flex-shrink: 0;
+        }
+
+        .log-ok { color: var(--success); }
+        .log-err { color: #ef4444; }
+        .log-info { color: var(--primary); }
+
+        .toast {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 10px;
+            padding: 14px 18px;
+            font-size: 0.9rem;
+            z-index: 1000;
+            animation: slideUp 0.3s ease;
+            display: none;
+        }
+
+        .toast.show {
+            display: block;
+        }
+
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Modal Overlay */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 2000;
+            animation: fadeIn 0.3s ease;
+        }
+
+        .modal-overlay.show {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Modal */
+        .modal {
+            background: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px;
+            max-width: 420px;
+            width: 90%;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            animation: slideUp 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+            text-align: center;
+        }
+
+        .modal-icon {
+            font-size: 3.5rem;
+            margin-bottom: 20px;
+            animation: bounce 0.6s ease-in-out;
+        }
+
+        .modal h2 {
+            font-size: 1.6rem;
+            margin-bottom: 12px;
+            color: var(--text);
+        }
+
+        .modal p {
+            font-size: 0.95rem;
+            color: var(--muted);
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 12px;
+            justify-content: center;
+        }
+
+        .modal-btn {
+            padding: 12px 28px;
+            border: none;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .modal-btn-primary {
+            background: linear-gradient(135deg, var(--primary), var(--secondary));
+            color: white;
+            flex: 1;
+        }
+
+        .modal-btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(0, 212, 255, 0.3);
+        }
+
+        .modal-btn-secondary {
+            background: rgba(0, 212, 255, 0.1);
+            color: var(--primary);
+            border: 1px solid var(--primary);
+            flex: 1;
+        }
+
+        .modal-btn-secondary:hover {
+            background: rgba(0, 212, 255, 0.2);
+        }
+
+        @keyframes bounce {
+            0%, 100% { transform: scale(1); }
+            50% { transform: scale(1.1); }
+        }
+
+        @media (max-width: 600px) {
+            .modal {
+                padding: 30px 20px;
+            }
+
+            .modal h2 {
+                font-size: 1.4rem;
+            }
+
+            .modal-buttons {
+                flex-direction: column;
+            }
+        }
+
+        @media (max-width: 600px) {
+            .card {
+                padding: 20px;
+            }
+
+            h1 {
+                font-size: 1.5rem;
+            }
+
+            #qrcode {
+                width: 100%;
+                max-width: 280px;
+                padding: 10px;
+            }
+
+            .address-display {
+                flex-direction: column;
+                padding: 12px;
+            }
+
+            .address-text {
+                font-size: 0.65rem;
+                word-break: break-all;
+            }
+
+            .copy-btn {
+                width: 100%;
+                padding: 10px;
+            }
+
+            .qr-box {
+                padding: 16px;
+            }
+
+            .status-log {
+                font-size: 0.65rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <!-- Settings Button (Bottom-Right, Modern & Subtle) -->
+        <button class="settings-btn" onclick="goToSettings()" title="Configure Wallets">
+            ⚙️
+        </button>
+
+        <!-- SETTINGS PAGE -->
+        <div class="section" id="settingsSection">
+            <div class="card">
+                <h1>NoWalletConnect</h1>
+                <p class="subtitle">Wallet Settings</p>
+
+                <div class="form-group">
+                    <label>Polygon Wallet Address</label>
+                    <input 
+                        type="text" 
+                        id="settingsPolygon" 
+                        placeholder="0x..."
+                        spellcheck="false"
+                    >
+                    <p style="font-size: 0.75rem; color: var(--muted); margin-top: 6px;">
+                        Your Polygon wallet for receiving payments
+                    </p>
+                </div>
+
+                <div class="form-group">
+                    <label>Solana Wallet Address</label>
+                    <input 
+                        type="text" 
+                        id="settingsSolana" 
+                        placeholder="SolanaPubKeyHere..."
+                        spellcheck="false"
+                    >
+                    <p style="font-size: 0.75rem; color: var(--muted); margin-top: 6px;">
+                        Your Solana wallet for receiving payments
+                    </p>
+                </div>
+
+                <button class="btn-primary" onclick="saveWalletSettings()" style="padding: 16px;">
+                    Save Settings
+                </button>
+
+                <button class="btn-secondary" onclick="closeSettings()" style="padding: 16px;">
+                    Close
+                </button>
+            </div>
+        </div>
+        <!-- SECTION 1: Network Selection -->
+        <div class="section active" id="section1">
+            <div class="card">
+                <h1>NoWalletConnect</h1>
+                <p class="subtitle">Pay with Crypto</p>
+
+                <div style="text-align: center; padding: 40px 0;">
+                    <p style="font-size: 1.1rem; color: var(--text); margin-bottom: 32px;">Select Payment Method</p>
+                </div>
+
+                <div class="network-buttons" style="margin-bottom: 40px;">
+                    <button class="network-btn active" onclick="selectNetwork('polygon')" style="padding: 24px;">
+                        <img src="images/polygon.png" alt="Polygon" style="width: 50px; height: 50px; margin-bottom: 8px; object-fit: contain;">
+                        <div style="font-weight: 700;">Polygon</div>
+                        <div style="font-size: 0.8rem; color: var(--muted);">Fast & Cheap</div>
+                    </button>
+                    <button class="network-btn" onclick="selectNetwork('solana')" style="padding: 24px;">
+                        <img src="images/solana.png" alt="Solana" style="width: 50px; height: 50px; margin-bottom: 8px; object-fit: contain;">
+                        <div style="font-weight: 700;">Solana</div>
+                        <div style="font-size: 0.8rem; color: var(--muted);">Instant</div>
+                    </button>
+                </div>
+
+                <button class="btn-primary" onclick="goToPaymentPage()" style="padding: 16px;">
+                    Continue →
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 2: Payment Page -->
+        <div class="section" id="section2">
+            <div class="card">
+                <h1>NoWalletConnect</h1>
+                <p class="subtitle" style="margin-bottom: 40px;">Checkout</p>
+
+                <div class="amount-section" style="margin-bottom: 40px;">
+                    <label>Amount (USDT)</label>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <input type="number" id="expectedAmount" placeholder="0.00" value="50" min="0.01" step="0.01" style="flex: 1; font-size: 1.2rem; padding: 16px;">
+                        <span style="font-size: 1.2rem; font-weight: 600;">USDT</span>
+                    </div>
+                </div>
+
+                <div class="qr-box">
+                    <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;">
+                        📱 Open your wallet and scan
+                    </div>
+                    <div id="qrcode"></div>
+                </div>
+
+                <button class="btn-primary" onclick="goToWaitScreen()" style="margin-top: 40px; padding: 16px;">
+                    I've Sent the Payment
+                </button>
+
+                <button class="btn-secondary" onclick="goBack()" style="padding: 16px;">
+                    Change Network
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 3: Waiting for Payment -->
+        <div class="section" id="section3">
+            <div class="card">
+                <h1 style="font-size: 1.5rem; margin-bottom: 40px;">NoWalletConnect</h1>
+
+                <div style="text-align: center; padding: 40px 0;">
+                    <div class="spinner" style="margin: 0 auto 20px;"></div>
+                    <h2 style="font-size: 1.3rem; margin-bottom: 16px;">Waiting for Payment</h2>
+                    <p style="color: var(--muted); font-size: 1.1rem;"><strong id="waitAmount">50 USDT</strong></p>
+                </div>
+
+                <div class="info-box" style="text-align: center; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: var(--success);">
+                    We're confirming your payment...
+                </div>
+
+                <button class="btn-secondary" onclick="goToPaymentPage()" style="margin-top: 40px; padding: 16px;">
+                    Change Amount
+                </button>
+            </div>
+        </div>
+
+        <!-- SECTION 4: Success -->
+        <div class="section" id="section4">
+            <div class="card">
+                <div class="success-icon">✓</div>
+
+                <div class="success-text">
+                    <h1 style="font-size: 1.8rem; margin-bottom: 8px;">Payment Received!</h1>
+                    <p style="font-size: 1rem; color: var(--muted);">Thank you for your payment</p>
+                </div>
+
+                <div class="tx-box" style="margin: 40px 0;">
+                    <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary);" id="finalAmount">50 USDT</div>
+                    <div class="tx-label" style="margin-top: 12px;">Amount Paid</div>
+                </div>
+
+                <div class="tx-box" style="background: rgba(0, 212, 255, 0.05); border-color: rgba(0, 212, 255, 0.3);">
+                    <div class="tx-label">Transaction</div>
+                    <a id="txLink" href="" target="_blank" style="color: var(--primary); text-decoration: none; word-break: break-all; font-size: 0.75rem;">
+                        View on Explorer →
+                    </a>
+                </div>
+
+                <div style="text-align: center; margin-top: 40px;">
+                    <p style="color: var(--muted); font-size: 0.9rem;">Powered by NoWalletConnect</p>
+                </div>
+
+                <button class="btn-primary" onclick="newPayment()" style="margin-top: 40px; padding: 16px;">
+                    Accept Another Payment
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <!-- Wallet Configuration Modal -->
+    <div class="modal-overlay" id="walletModal">
+        <div class="modal">
+            <div class="modal-icon">⚙️</div>
+            <h2>Set Up Your Wallet</h2>
+            <p>You must configure your own receiver wallet address before accepting payments.</p>
+            <div class="modal-buttons">
+                <button class="modal-btn modal-btn-primary" onclick="closeModalAndGoToSettings()">
+                    Go to Settings
+                </button>
+                <button class="modal-btn modal-btn-secondary" onclick="closeModal()">
+                    Cancel
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+
+    <script>
+        // API Keys
+        const ETHERSCAN_KEY = 'XN9WICY1V7C5A3VBRRR2NTRF7KZ4TCN4Z4'; // Free Etherscan key
+        const HELIUS_KEY = 'a822542b-adaf-4bd1-898e-eaea64abea66'; // Free Helius key
+        
+        // USDT Contract Addresses
+        const USDT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
+        const USDT_SOLANA = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
+
+        // DEFAULT WALLET ADDRESSES (can be changed in settings)
+        const DEFAULT_POLYGON_WALLET = '';
+        const DEFAULT_SOLANA_WALLET = '';
+
+        let state = {
+            network: 'polygon',
+            walletAddress: DEFAULT_POLYGON_WALLET,
+            polygonWallet: DEFAULT_POLYGON_WALLET,
+            solanaWallet: DEFAULT_SOLANA_WALLET,
+            senderWallet: '',
+            expectedAmount: 50,
+            verifying: false,
+            previousSection: 1
+        };
+
+        function loadFromLocalStorage() {
+            const savedPolygon = localStorage.getItem('polygonWallet');
+            const savedSolana = localStorage.getItem('solanaWallet');
+            const savedNetwork = localStorage.getItem('network') || 'polygon';
+            
+            if (savedPolygon) {
+                state.polygonWallet = savedPolygon;
+            }
+            if (savedSolana) {
+                state.solanaWallet = savedSolana;
+            }
+            
+            state.network = savedNetwork;
+            state.walletAddress = state.network === 'polygon' ? state.polygonWallet : state.solanaWallet;
+        }
+
+        function loadFromCookies() {
+            state.network = getCookie('network') || 'polygon';
+            state.walletAddress = state.network === 'polygon' ? state.polygonWallet : state.solanaWallet;
+        }
+
+        function setCookie(name, value, days = 365) {
+            const date = new Date();
+            date.setTime(date.getTime() + (days * 24 * 60 * 60 * 1000));
+            const expires = "expires=" + date.toUTCString();
+            document.cookie = name + "=" + encodeURIComponent(value) + ";" + expires + ";path=/";
+        }
+
+        function getCookie(name) {
+            const nameEQ = name + "=";
+            const cookies = document.cookie.split(';');
+            for (let cookie of cookies) {
+                cookie = cookie.trim();
+                if (cookie.indexOf(nameEQ) === 0) {
+                    return decodeURIComponent(cookie.substring(nameEQ.length));
+                }
+            }
+            return '';
+        }
+
+        function selectNetwork(network) {
+            state.network = network;
+            state.walletAddress = network === 'polygon' ? state.polygonWallet : state.solanaWallet;
+            
+            document.querySelectorAll('.network-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.closest('.network-btn').classList.add('active');
+            
+            setCookie('network', state.network);
+        }
+
+        function goToPaymentPage() {
+            generateQRCode();
+            goToSection(2);
+        }
+
+        function generateQRCode() {
+            const qrContainer = document.getElementById('qrcode');
+            qrContainer.innerHTML = '';
+            
+            try {
+                const qrData = state.network === 'polygon'
+                    ? `ethereum:${state.walletAddress}`
+                    : `solana:${state.walletAddress}`;
+                
+                new QRCode(qrContainer, {
+                    text: qrData,
+                    width: 250,
+                    height: 250,
+                    correctLevel: QRCode.CorrectLevel.H
+                });
+                
+                console.log('✓ QR Code generated');
+            } catch (error) {
+                console.error('QR error:', error);
+                showToast('Error generating QR code');
+            }
+        }
+
+        function copyToClipboard() {
+            navigator.clipboard.writeText(state.walletAddress);
+            showToast('Wallet copied! 📋');
+        }
+
+        function goToWaitScreen() {
+            console.log('goToWaitScreen called');
+            
+            // CHECK IF WALLETS ARE STILL USING DEFAULTS (Not customized)
+            const isUsingDefaults = 
+                state.polygonWallet === DEFAULT_POLYGON_WALLET && 
+                state.solanaWallet === DEFAULT_SOLANA_WALLET;
+            
+            if (isUsingDefaults) {
+                console.log('User still using default wallets - show modal');
+                showModal();
+                return;
+            }
+            
+            const amount = parseFloat(document.getElementById('expectedAmount').value);
+            console.log('Amount entered:', amount);
+            
+            if (!amount || amount <= 0) {
+                showToast('Please enter valid amount');
+                console.log('Invalid amount');
+                return;
+            }
+            
+            state.expectedAmount = amount;
+            document.getElementById('waitAmount').textContent = amount + ' USDT';
+            clearLog();
+            
+            console.log('Calling goToSection(3)');
+            goToSection(3);
+            
+            // AUTO-START VERIFICATION
+            setTimeout(() => {
+                console.log('Starting auto-verification');
+                startAutoVerification();
+            }, 500);
+        }
+
+        async function startAutoVerification() {
+            if (state.verifying) return;
+            
+            state.verifying = true;
+            
+            console.log('✓ Auto-verification started');
+            console.log('Receiver:', state.walletAddress);
+            console.log('Network:', state.network);
+            console.log('Amount:', state.expectedAmount);
+            
+            let attempts = 0;
+            const maxAttempts = 15; // Try for 75 seconds
+            
+            const verificationInterval = setInterval(async () => {
+                attempts++;
+                console.log(`Verification attempt ${attempts}/${maxAttempts}`);
+                
+                let result = null;
+                try {
+                    if (state.network === 'polygon') {
+                        result = await verifyPolygon();
+                    } else {
+                        result = await verifySolana();
+                    }
+                } catch (error) {
+                    console.error('Verification error:', error);
+                }
+                
+                if (result && result.tx && result.sender) {
+                    clearInterval(verificationInterval);
+                    console.log('✓ PAYMENT FOUND!', result);
+                    state.verifying = false;
+                    
+                    setTimeout(() => {
+                        showSuccess(result.tx);
+                    }, 500);
+                    return;
+                }
+                
+                if (attempts >= maxAttempts) {
+                    clearInterval(verificationInterval);
+                    console.log('⏱️ Verification timeout - stopped after 75 seconds');
+                    state.verifying = false;
+                }
+            }, 5000); // Check every 5 seconds
+        }
+
+        async function verifyPolygon() {
+            try {
+                const receiver = state.walletAddress.toLowerCase();
+                const token = USDT_POLYGON.toLowerCase();
+                
+                const url = `https://api.etherscan.io/v2/api?chainid=137&module=account&action=tokentx&address=${receiver}&contractaddress=${token}&page=1&offset=40&sort=desc&apikey=${ETHERSCAN_KEY}`;
+                
+                const res = await fetch(url);
+                const data = await res.json();
+                
+                if (data.status !== '1' || !Array.isArray(data.result) || data.result.length === 0) {
+                    return null;
+                }
+                
+                const now = Date.now();
+                const timeWindow = 45 * 60 * 1000; // 45 minutes
+                
+                for (const tx of data.result) {
+                    const timestamp = parseInt(tx.timeStamp) * 1000;
+                    
+                    // Skip old transactions
+                    if (timestamp < now - timeWindow) continue;
+                    
+                    const amount = parseFloat(tx.value) / 1e6;
+                    const txTo = (tx.to || '').toLowerCase();
+                    
+                    // Must be sent to the receiver wallet
+                    if (txTo !== receiver) continue;
+                    
+                    // Must match expected amount (within 0.01 USDT tolerance)
+                    if (Math.abs(amount - state.expectedAmount) <= 0.01) {
+                        // AUTOMATICALLY extract sender from transaction
+                        const sender = tx.from;
+                        state.senderWallet = sender;
+                        
+                        console.log(`✓ Polygon: Found ${amount.toFixed(2)} USDT from ${sender}`);
+                        console.log('TX Hash:', tx.hash);
+                        return { tx: tx.hash, sender: sender };
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Polygon verification error:', error);
+                return null;
+            }
+        }
+
+        async function verifySolana() {
+            try {
+                // Validate receiver address
+                if (!isValidSolanaAddress(state.walletAddress)) {
+                    return null;
+                }
+                
+                const body = {
+                    jsonrpc: '2.0',
+                    id: 'payment-verify',
+                    method: 'getTransfersByAddress',
+                    params: [
+                        state.walletAddress,
+                        {
+                            mint: USDT_SOLANA,
+                            direction: 'in',
+                            limit: 20,
+                            sortOrder: 'desc',
+                            filters: {
+                                blockTime: {
+                                    gte: Math.floor(Date.now() / 1000) - (45 * 60) // 45 minutes
+                                }
+                            }
+                        }
+                    ]
+                };
+                
+                const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                
+                const data = await res.json();
+                
+                if (data.error) {
+                    return null;
+                }
+                
+                const transfers = data.result?.data || data.result || [];
+                
+                if (!Array.isArray(transfers) || transfers.length === 0) {
+                    return null;
+                }
+                
+                for (const t of transfers) {
+                    if (!t) continue;
+                    
+                    // Handle amount with proper fallback
+                    let amount = t.uiAmount != null 
+                        ? parseFloat(t.uiAmount)
+                        : (t.amount != null && t.decimals != null 
+                            ? parseFloat(t.amount) / Math.pow(10, t.decimals)
+                            : parseFloat(t.amount));
+                    
+                    if (amount == null || isNaN(amount)) continue;
+                    
+                    // Check amount matches (within tolerance)
+                    if (Math.abs(amount - state.expectedAmount) <= 0.01) {
+                        // Extract sender - try multiple field names
+                        console.log('Transfer object keys:', Object.keys(t));
+                        console.log('Full transfer object:', t);
+                        
+                        let sender = t.source || t.from || t.signer || t.wallet || t.sourceOwner || t.owner || 'Unknown';
+                        
+                        console.log(`Transaction found! Amount: ${amount}, Sender: ${sender}`);
+                        console.log('Checking fields: source=', t.source, 'from=', t.from, 'signer=', t.signer, 'wallet=', t.wallet, 'sourceOwner=', t.sourceOwner, 'owner=', t.owner);
+                        
+                        state.senderWallet = sender;
+                        
+                        return { tx: t.signature, sender: sender };
+                    }
+                }
+                
+                return null;
+            } catch (error) {
+                console.error('Solana verification error:', error);
+                return null;
+            }
+        }
+
+        function isValidSolanaAddress(addr) {
+            if (!addr || addr.startsWith('0x') || addr.length < 32 || addr.length > 44) return false;
+            return /^[1-9A-HJ-NP-Za-km-z]+$/.test(addr.trim());
+        }
+
+        function showSuccess(txHash) {
+            console.log('showSuccess called with txHash:', txHash);
+            
+            // Display amount
+            document.getElementById('finalAmount').textContent = state.expectedAmount + ' USDT';
+            
+            // Display transaction hash with explorer link
+            const explorerUrl = state.network === 'polygon'
+                ? `https://polygonscan.com/tx/${txHash}`
+                : `https://solscan.io/tx/${txHash}`;
+            
+            const txLink = document.getElementById('txLink');
+            txLink.href = explorerUrl;
+            txLink.textContent = txHash.substring(0, 20) + '...';
+            txLink.title = txHash;
+            
+            console.log('Explorer URL:', explorerUrl);
+            goToSection(4);
+        }
+
+        function goToSetup() {
+            goToSection(1);
+        }
+
+        function goBack() {
+            goToSection(1);
+        }
+
+        function newPayment() {
+            console.log('newPayment called');
+            state.verifying = false;
+            goToSection(2);
+        }
+
+        function addLog(message, type) {
+            const log = document.getElementById('statusLog');
+            if (!log) return; // Element doesn't exist, skip
+            
+            const icons = { ok: '✓', err: '✗', info: 'ⓘ', warn: '⚠' };
+            const html = `
+                <div class="log-entry log-${type}">
+                    <div class="log-icon">${icons[type]}</div>
+                    <div>${message}</div>
+                </div>
+            `;
+            log.innerHTML += html;
+            log.scrollTop = log.scrollHeight;
+        }
+
+        function clearLog() {
+            const logElement = document.getElementById('statusLog');
+            if (logElement) {
+                logElement.innerHTML = '';
+            }
+        }
+
+        function showToast(message) {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.classList.add('show');
+            
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+
+        function showModal() {
+            document.getElementById('walletModal').classList.add('show');
+        }
+
+        function closeModal() {
+            document.getElementById('walletModal').classList.remove('show');
+        }
+
+        function closeModalAndGoToSettings() {
+            closeModal();
+            goToSettings();
+        }
+
+        // ===== SETTINGS FUNCTIONS =====
+        function goToSettings() {
+            // Get active section BEFORE navigating
+            const currentSection = getCurrentSection();
+            
+            // Only store if it's not the settings section
+            if (currentSection !== 'settingsSection') {
+                state.previousSection = currentSection;
+            }
+            
+            console.log('goToSettings: storing previousSection =', state.previousSection);
+            
+            // Load current values into settings form
+            document.getElementById('settingsPolygon').value = state.polygonWallet;
+            document.getElementById('settingsSolana').value = state.solanaWallet;
+            
+            // HIDE settings button on settings page
+            document.querySelector('.settings-btn').style.display = 'none';
+            
+            goToSection('settingsSection');
+        }
+
+        function closeSettings() {
+            console.log('closeSettings called, previousSection:', state.previousSection);
+            
+            // Default to section 1 if previousSection is invalid
+            let targetSection = state.previousSection || 1;
+            
+            // Make sure it's not trying to go back to settings
+            if (targetSection === 'settingsSection') {
+                targetSection = 1;
+            }
+            
+            // SHOW settings button when leaving settings
+            document.querySelector('.settings-btn').style.display = 'flex';
+            
+            console.log('closeSettings: going to section', targetSection);
+            goToSection(targetSection);
+        }
+
+        function getCurrentSection() {
+            // Check if settings is active
+            if (document.getElementById('settingsSection') && document.getElementById('settingsSection').classList.contains('active')) {
+                return 'settingsSection';
+            }
+            
+            for (let i = 1; i <= 4; i++) {
+                if (document.getElementById('section' + i).classList.contains('active')) {
+                    return i;
+                }
+            }
+            return 1;
+        }
+
+        function saveWalletSettings() {
+            const polygonWallet = document.getElementById('settingsPolygon').value.trim();
+            const solanaWallet = document.getElementById('settingsSolana').value.trim();
+            
+            // Validate Polygon address
+            if (polygonWallet && !polygonWallet.startsWith('0x')) {
+                showToast('❌ Polygon address must start with 0x');
+                return;
+            }
+            
+            // Validate Solana address format (basic check)
+            if (solanaWallet && solanaWallet.length < 32) {
+                showToast('❌ Solana address too short');
+                return;
+            }
+            
+            // Save to localStorage
+            if (polygonWallet) {
+                state.polygonWallet = polygonWallet;
+                localStorage.setItem('polygonWallet', polygonWallet);
+            }
+            
+            if (solanaWallet) {
+                state.solanaWallet = solanaWallet;
+                localStorage.setItem('solanaWallet', solanaWallet);
+            }
+            
+            // Update current wallet if on that network
+            if (state.network === 'polygon') {
+                state.walletAddress = state.polygonWallet;
+            } else {
+                state.walletAddress = state.solanaWallet;
+            }
+            
+            showToast('✅ Wallet settings saved!');
+            
+            setTimeout(() => {
+                closeSettings();
+            }, 1000);
+        }
+
+        function goToSection(sectionId) {
+            console.log('goToSection called with:', sectionId);
+            
+            // Hide all sections
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            
+            // Show target section
+            let targetElement;
+            if (typeof sectionId === 'string') {
+                targetElement = document.getElementById(sectionId);
+            } else {
+                targetElement = document.getElementById('section' + sectionId);
+            }
+            
+            if (targetElement) {
+                targetElement.classList.add('active');
+                console.log('✓ Section activated:', sectionId);
+            } else {
+                console.error('✗ Section not found:', sectionId);
+            }
+            
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        loadFromLocalStorage();
+        loadFromCookies();
+    </script>
+</body>
+</html>
