@@ -246,13 +246,23 @@
             text-align: center;
         }
 
-        #qrcode {
-            display: inline-flex;
-            background: white;
-            padding: 12px;
-            border-radius: 12px;
-            margin-bottom: 12px;
-        }
+#qrcode {
+    display: inline-flex;
+    background: white;
+    padding: 12px;
+    border-radius: 12px;
+    margin-bottom: 12px;
+    max-width: 100%;
+    width: auto;
+}
+
+@media (max-width: 600px) {
+    #qrcode {
+        max-width: 90vw;
+        width: 280px;
+        max-width: 280px;
+    }
+}
 
         #qrcode svg {
             max-width: 100%;
