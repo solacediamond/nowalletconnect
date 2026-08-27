@@ -248,13 +248,22 @@
         }
 
 #qrcode {
-    display: inline-flex;
+    display: flex;
+    justify-content: center;
+    align-items: center;
     background: white;
     padding: 12px;
     border-radius: 12px;
     margin-bottom: 12px;
+    width: 100%;
     max-width: 100%;
-    width: fit-content;
+    overflow: hidden;
+}
+
+#qrcode canvas {
+    max-width: 100% !important;
+    height: auto !important;
+    display: block;
 }
 
 #qrcode img {
@@ -265,6 +274,13 @@
 @media (max-width: 600px) {
     #qrcode {
         padding: 8px;
+        width: 100%;
+    }
+    
+    #qrcode canvas {
+        max-width: 100% !important;
+        width: 180px !important;
+        height: 180px !important;
     }
 }
 
