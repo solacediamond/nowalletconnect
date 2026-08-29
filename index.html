@@ -1465,8 +1465,13 @@ function goBack() {
 
 function newPayment() {
     stopVerification();
+    state.expectedAmount = 0;
+    const amountInput = document.getElementById("expectedAmount");
+    if (amountInput) amountInput.value = "";
+    setWatchStatus("Enter how much they should send");
+    setCountdownText("");
     goToSection(2);
-    startWatchingFromCheckout();
+    generateQRCode();
 }
 
         function addLog(message, type) {
