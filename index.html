@@ -305,44 +305,51 @@
             margin-bottom: 20px;
         }
 
-        .address-display {
-            background: rgba(30, 41, 59, 0.8);
-            border: 1px solid var(--border);
-            border-radius: 10px;
-            padding: 14px;
-            display: flex;
-            flex-direction: column;
-            gap: 10px;
-            margin-bottom: 20px;
-            word-break: break-all;
-        }
+.address-display {
+    width: 100%;
+    margin-top: 14px;
+    padding: 10px 12px;
+    background: rgba(30, 41, 59, 0.5);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    text-align: left;
+}
 
-        .address-text {
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 0.75rem;
-            color: var(--primary);
-            word-break: break-all;
-            line-height: 1.4;
-        }
+.address-display > div:first-child {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    font-weight: 600;
+    margin-bottom: 6px;
+}
 
-        .copy-btn {
-            padding: 8px 12px;
-            background: rgba(0, 212, 255, 0.1);
-            border: 1px solid rgba(0, 212, 255, 0.3);
-            border-radius: 8px;
-            color: var(--primary);
-            font-weight: 600;
-            font-size: 0.75rem;
-            cursor: pointer;
-            white-space: nowrap;
-            transition: all 0.3s;
-            margin: 0;
-            width: 100%;
-        }
+.address-text {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.72rem;
+    color: var(--primary);
+    word-break: break-all;
+    line-height: 1.35;
+    margin-bottom: 8px;
+}
 
-        .copy-btn:hover {
-            background: rgba(0, 212, 255, 0.2);
-        }
+.copy-btn {
+    width: 100%;
+    padding: 8px 10px;
+    background: rgba(0, 212, 255, 0.08);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 7px;
+    color: var(--primary);
+    font-weight: 600;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    margin: 0;
+}
+
+.copy-btn:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: rgba(0, 212, 255, 0.45);
+}
 
         .amount-section {
             background: rgba(16, 185, 129, 0.05);
@@ -355,6 +362,89 @@
         .amount-section input {
             margin-bottom: 0;
         }
+        .payment-summary {
+    background: rgba(16, 185, 129, 0.05);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 14px;
+    padding: 20px;
+    margin-bottom: 12px;
+}
+
+.payment-amount-label {
+    font-size: 0.7rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 8px;
+}
+
+.payment-amount {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.payment-amount input {
+    flex: 1;
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    padding: 12px 14px;
+}
+
+.payment-amount span {
+    font-size: 1.2rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.payment-details {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+}
+
+.payment-detail {
+    background: rgba(30, 41, 59, 0.6);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    padding: 12px;
+}
+
+.detail-label {
+    display: block;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    color: var(--muted);
+    margin-bottom: 5px;
+}
+
+.detail-value {
+    display: block;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: var(--text);
+}
+
+.network-warning {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    background: rgba(239, 68, 68, 0.08);
+    border: 1px solid rgba(239, 68, 68, 0.3);
+    border-radius: 10px;
+    padding: 12px 14px;
+    margin-bottom: 20px;
+    color: #fca5a5;
+    font-size: 0.78rem;
+    line-height: 1.4;
+}
+
+.network-warning strong {
+    color: #fca5a5;
+}
 
         .success-icon {
             width: 80px;
@@ -758,19 +848,69 @@
                 <h1>NoWalletConnect</h1>
                 <p class="subtitle" style="margin-bottom: 40px;">Checkout</p>
 
-                <div class="amount-section" style="margin-bottom: 40px;">
-                    <label>Amount (USDT)</label>
-                    <div style="display: flex; gap: 10px; align-items: center;">
-                        <input type="number" id="expectedAmount" placeholder="0.00" value="50" min="0.01" step="0.01" style="flex: 1; font-size: 1.2rem; padding: 16px;">
-                        <span style="font-size: 1.2rem; font-weight: 600;">USDT</span>
-                    </div>
-                </div>
+<div class="payment-summary">
+
+    <div class="payment-amount-label">
+        SEND EXACTLY
+    </div>
+
+    <div class="payment-amount">
+        <input
+            type="number"
+            id="expectedAmount"
+            placeholder="0.00"
+            value="50"
+            min="0.01"
+            step="0.01"
+        >
+        <span>USDT</span>
+    </div>
+
+    <div class="payment-details">
+
+        <div class="payment-detail">
+            <span class="detail-label">NETWORK</span>
+            <span class="detail-value" id="paymentNetwork">
+                Polygon
+            </span>
+        </div>
+
+        <div class="payment-detail">
+            <span class="detail-label">TOKEN</span>
+            <span class="detail-value" id="paymentToken">
+                USDT (ERC-20)
+            </span>
+        </div>
+
+    </div>
+
+</div>
+
+<div class="network-warning" id="networkWarning">
+    <strong>⚠️ Only send USDT on Polygon</strong>
+    <span>Sending from another network may result in permanent loss.</span>
+</div>
 
                 <div class="qr-box">
                     <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;">
                         📱 Open your wallet and scan
                     </div>
                     <div id="qrcode"></div>
+
+<!-- Receiving Wallet Address -->
+<div class="address-display">
+    <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 600;">
+        Receiving Address
+    </div>
+
+    <div class="address-text" id="displayWalletAddress">
+        —
+    </div>
+
+    <button class="copy-btn" onclick="copyToClipboard()">
+        📋 Copy Address
+    </button>
+</div>
                 </div>
 
                 <button class="btn-primary" onclick="goToWaitScreen()" style="margin-top: 40px; padding: 16px;">
@@ -860,8 +1000,7 @@
 
     <script>
         // API Keys
-        const ETHERSCAN_KEY = 'AB3S52DZVWEBMJECN7FD4A94FT3DZ4DZFC';
-        const HELIUS_KEY = '979657f0-bb25-44ef-9c20-a4f334090e55';
+        const API = "https://nowalletconnect-api.lightunuovo.workers.dev";
         
         // USDT Contract Addresses
         const USDT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
@@ -922,15 +1061,56 @@
             return '';
         }
 
-        function selectNetwork(network) {
-            state.network = network;
-            state.walletAddress = network === 'polygon' ? state.polygonWallet : state.solanaWallet;
-            
-            document.querySelectorAll('.network-btn').forEach(btn => btn.classList.remove('active'));
-            event.target.closest('.network-btn').classList.add('active');
-            
-            setCookie('network', state.network);
-        }
+function selectNetwork(network) {
+    state.network = network;
+    state.walletAddress =
+        network === 'polygon'
+            ? state.polygonWallet
+            : state.solanaWallet;
+
+    document.querySelectorAll('.network-btn')
+        .forEach(btn => btn.classList.remove('active'));
+
+    event.target.closest('.network-btn')
+        .classList.add('active');
+
+    // Update payment information
+    updatePaymentNetwork();
+
+    setCookie('network', state.network);
+}
+
+function updatePaymentNetwork() {
+    const networkElement =
+        document.getElementById('paymentNetwork');
+
+    const tokenElement =
+        document.getElementById('paymentToken');
+
+    const warningElement =
+        document.getElementById('networkWarning');
+
+    if (state.network === 'solana') {
+
+        networkElement.textContent = 'Solana';
+        tokenElement.textContent = 'USDT (SPL)';
+
+        warningElement.innerHTML = `
+            <strong>⚠️ Only send USDT on Solana</strong>
+            <span>Sending from another network may result in permanent loss.</span>
+        `;
+
+    } else {
+
+        networkElement.textContent = 'Polygon';
+        tokenElement.textContent = 'USDT (ERC-20)';
+
+        warningElement.innerHTML = `
+            <strong>⚠️ Only send USDT on Polygon</strong>
+            <span>Sending from another network may result in permanent loss.</span>
+        `;
+    }
+}
 
         function goToPaymentPage() {
             generateQRCode();
@@ -940,6 +1120,12 @@
         function generateQRCode() {
             const qrContainer = document.getElementById('qrcode');
             qrContainer.innerHTML = '';
+            // Display receiving wallet address
+const addressDisplay = document.getElementById('displayWalletAddress');
+
+if (addressDisplay) {
+    addressDisplay.textContent = state.walletAddress || 'Wallet not configured';
+}
             
             try {
                 const qrData = state.network === 'polygon'
@@ -960,10 +1146,20 @@
             }
         }
 
-        function copyToClipboard() {
-            navigator.clipboard.writeText(state.walletAddress);
-            showToast('Wallet copied! 📋');
-        }
+function copyToClipboard() {
+    if (!state.walletAddress) {
+        showToast('❌ Wallet address not configured');
+        return;
+    }
+
+    navigator.clipboard.writeText(state.walletAddress)
+        .then(() => {
+            showToast('✓ Wallet address copied!');
+        })
+        .catch(() => {
+            showToast('❌ Failed to copy address');
+        });
+}
 
         function goToWaitScreen() {
             console.log('goToWaitScreen called');
@@ -1002,186 +1198,50 @@
             }, 500);
         }
 
-        async function startAutoVerification() {
-            if (state.verifying) return;
-            
-            state.verifying = true;
-            
-            console.log('✓ Auto-verification started');
-            console.log('Receiver:', state.walletAddress);
-            console.log('Network:', state.network);
-            console.log('Amount:', state.expectedAmount);
-            
-            let attempts = 0;
-            const maxAttempts = 15; // Try for 75 seconds
-            
-            const verificationInterval = setInterval(async () => {
-                attempts++;
-                console.log(`Verification attempt ${attempts}/${maxAttempts}`);
-                
-                let result = null;
-                try {
-                    if (state.network === 'polygon') {
-                        result = await verifyPolygon();
-                    } else {
-                        result = await verifySolana();
-                    }
-                } catch (error) {
-                    console.error('Verification error:', error);
-                }
-                
-                if (result && result.tx && result.sender) {
-                    clearInterval(verificationInterval);
-                    console.log('✓ PAYMENT FOUND!', result);
-                    state.verifying = false;
-                    
-                    setTimeout(() => {
-                        showSuccess(result.tx);
-                    }, 500);
-                    return;
-                }
-                
-                if (attempts >= maxAttempts) {
-                    clearInterval(verificationInterval);
-                    console.log('⏱️ Verification timeout - stopped after 75 seconds');
-                    state.verifying = false;
-                }
-            }, 5000); // Check every 5 seconds
-        }
+async function startAutoVerification() {
+  if (state.verifying) return;
+  if (!state.walletAddress) {
+    showToast("Wallet not configured");
+    return;
+  }
 
-        async function verifyPolygon() {
-            try {
-                const receiver = state.walletAddress.toLowerCase();
-                const token = USDT_POLYGON.toLowerCase();
-                
-                const url = `https://api.etherscan.io/v2/api?chainid=137&module=account&action=tokentx&address=${receiver}&contractaddress=${token}&page=1&offset=40&sort=desc&apikey=${ETHERSCAN_KEY}`;
-                
-                const res = await fetch(url);
-                const data = await res.json();
-                
-                if (data.status !== '1' || !Array.isArray(data.result) || data.result.length === 0) {
-                    return null;
-                }
-                
-                const now = Date.now();
-                const timeWindow = 45 * 60 * 1000; // 45 minutes
-                
-                for (const tx of data.result) {
-                    const timestamp = parseInt(tx.timeStamp) * 1000;
-                    
-                    // Skip old transactions
-                    if (timestamp < now - timeWindow) continue;
-                    
-                    const amount = parseFloat(tx.value) / 1e6;
-                    const txTo = (tx.to || '').toLowerCase();
-                    
-                    // Must be sent to the receiver wallet
-                    if (txTo !== receiver) continue;
-                    
-                    // Must match expected amount (within 0.01 USDT tolerance)
-                    if (Math.abs(amount - state.expectedAmount) <= 0.01) {
-                        // AUTOMATICALLY extract sender from transaction
-                        const sender = tx.from;
-                        state.senderWallet = sender;
-                        
-                        console.log(`✓ Polygon: Found ${amount.toFixed(2)} USDT from ${sender}`);
-                        console.log('TX Hash:', tx.hash);
-                        return { tx: tx.hash, sender: sender };
-                    }
-                }
-                
-                return null;
-            } catch (error) {
-                console.error('Polygon verification error:', error);
-                return null;
-            }
-        }
+  state.verifying = true;
+state.watchStartedAt = Date.now() - 30 * 60 * 1000;
 
-        async function verifySolana() {
-            try {
-                // Validate receiver address
-                if (!isValidSolanaAddress(state.walletAddress)) {
-                    return null;
-                }
-                
-                const body = {
-                    jsonrpc: '2.0',
-                    id: 'payment-verify',
-                    method: 'getTransfersByAddress',
-                    params: [
-                        state.walletAddress,
-                        {
-                            mint: USDT_SOLANA,
-                            direction: 'in',
-                            limit: 20,
-                            sortOrder: 'desc',
-                            filters: {
-                                blockTime: {
-                                    gte: Math.floor(Date.now() / 1000) - (45 * 60) // 45 minutes
-                                }
-                            }
-                        }
-                    ]
-                };
-                
-                const res = await fetch(`https://mainnet.helius-rpc.com/?api-key=${HELIUS_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(body)
-                });
-                
-                const data = await res.json();
-                
-                if (data.error) {
-                    return null;
-                }
-                
-                const transfers = data.result?.data || data.result || [];
-                
-                if (!Array.isArray(transfers) || transfers.length === 0) {
-                    return null;
-                }
-                
-                for (const t of transfers) {
-                    if (!t) continue;
-                    
-                    // Handle amount with proper fallback
-                    let amount = t.uiAmount != null 
-                        ? parseFloat(t.uiAmount)
-                        : (t.amount != null && t.decimals != null 
-                            ? parseFloat(t.amount) / Math.pow(10, t.decimals)
-                            : parseFloat(t.amount));
-                    
-                    if (amount == null || isNaN(amount)) continue;
-                    
-                    // Check amount matches (within tolerance)
-                    if (Math.abs(amount - state.expectedAmount) <= 0.01) {
-                        // Extract sender - try multiple field names
-                        console.log('Transfer object keys:', Object.keys(t));
-                        console.log('Full transfer object:', t);
-                        
-                        let sender = t.source || t.from || t.signer || t.wallet || t.sourceOwner || t.owner || 'Unknown';
-                        
-                        console.log(`Transaction found! Amount: ${amount}, Sender: ${sender}`);
-                        console.log('Checking fields: source=', t.source, 'from=', t.from, 'signer=', t.signer, 'wallet=', t.wallet, 'sourceOwner=', t.sourceOwner, 'owner=', t.owner);
-                        
-                        state.senderWallet = sender;
-                        
-                        return { tx: t.signature, sender: sender };
-                    }
-                }
-                
-                return null;
-            } catch (error) {
-                console.error('Solana verification error:', error);
-                return null;
-            }
-        }
+  let attempts = 0;
+  const maxAttempts = 24; // 2 minutes at 5s
 
-        function isValidSolanaAddress(addr) {
-            if (!addr || addr.startsWith('0x') || addr.length < 32 || addr.length > 44) return false;
-            return /^[1-9A-HJ-NP-Za-km-z]+$/.test(addr.trim());
+  const timer = setInterval(async () => {
+    attempts++;
+    try {
+      const url =
+        `${API}/verify?network=${encodeURIComponent(state.network)}` +
+        `&address=${encodeURIComponent(state.walletAddress)}` +
+        `&amount=${encodeURIComponent(state.expectedAmount)}` +
+        `&since=${state.watchStartedAt}`;
+
+      const result = await (await fetch(url)).json();
+
+      if (result.paid && result.tx) {
+        clearInterval(timer);
+        state.verifying = false;
+        const txLink = document.getElementById("txLink");
+        if (result.explorer && txLink) {
+          txLink.href = result.explorer;
         }
+        showSuccess(result.tx);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    if (attempts >= maxAttempts) {
+      clearInterval(timer);
+      state.verifying = false;
+      showToast("No matching payment found yet");
+    }
+  }, 5000);
+}
 
         function showSuccess(txHash) {
             console.log('showSuccess called with txHash:', txHash);
@@ -1381,8 +1441,9 @@
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-        loadFromLocalStorage();
-        loadFromCookies();
+loadFromLocalStorage();
+loadFromCookies();
+updatePaymentNetwork();
     </script>
 </body>
 </html>
