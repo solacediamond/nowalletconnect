@@ -172,6 +172,15 @@
             margin-bottom: 10px;
         }
 
+        .settings-btn {
+    width: 48px;
+    height: 48px;
+    padding: 0;
+    margin: 0;
+    font-size: 20px;
+    line-height: 0;
+}
+
         .btn-primary {
             background: linear-gradient(135deg, var(--primary), var(--secondary));
             color: var(--bg);
@@ -763,14 +772,49 @@
                 font-size: 0.65rem;
             }
         }
+
+        .qr-empty {
+    width: 100%;
+    padding: 28px 16px;
+    text-align: center;
+}
+
+.qr-empty-icon {
+    width: 64px;
+    height: 64px;
+    margin: 0 auto 16px;
+    border-radius: 18px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.8rem;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.15), rgba(124, 58, 237, 0.15));
+    border: 1px solid rgba(0, 212, 255, 0.25);
+}
+
+.qr-empty h3 {
+    font-size: 1.15rem;
+    margin-bottom: 8px;
+}
+
+.qr-empty p {
+    color: var(--muted);
+    font-size: 0.9rem;
+    line-height: 1.45;
+    margin-bottom: 8px;
+}
+
+#qrcode:empty {
+    display: none;
+}
     </style>
 </head>
 <body>
     <div class="container">
         <!-- Settings Button (Bottom-Right, Modern & Subtle) -->
-        <button class="settings-btn" onclick="goToSettings()" title="Configure Wallets">
-            ⚙️
-        </button>
+<button class="settings-btn" onclick="goToSettings()" title="Configure Wallets">
+    <span style="display:block;line-height:1;transform:translateY(1px);">⚙️</span>
+</button>
 
         <!-- SETTINGS PAGE -->
         <div class="section" id="settingsSection">
@@ -855,14 +899,15 @@
     </div>
 
     <div class="payment-amount">
-        <input
-            type="number"
-            id="expectedAmount"
-            placeholder="0.00"
-            value="50"
-            min="0.01"
-            step="0.01"
-        >
+<input
+    type="number"
+    id="expectedAmount"
+    placeholder="0.00"
+    value=""
+    min="0.01"
+    step="0.01"
+    oninput="startWatchingFromCheckout()"
+>
         <span>USDT</span>
     </div>
 
@@ -891,31 +936,40 @@
     <span>Sending from another network may result in permanent loss.</span>
 </div>
 
-                <div class="qr-box">
-                    <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;">
-                        📱 Open your wallet and scan
-                    </div>
-                    <div id="qrcode"></div>
-
-<!-- Receiving Wallet Address -->
-<div class="address-display">
-    <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 600;">
-        Receiving Address
+<div class="qr-box" id="qrBox">
+    <div id="qrReady">
+        <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;">
+            Show this to the sender
+        </div>
+        <div id="qrcode"></div>
+        <div class="address-display">
+            <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 600;">
+                Receiving Address
+            </div>
+            <div class="address-text" id="displayWalletAddress">—</div>
+            <button class="copy-btn" onclick="copyToClipboard()">📋 Copy Address</button>
+        </div>
     </div>
 
-    <div class="address-text" id="displayWalletAddress">
-        —
+    <div id="qrEmpty" class="qr-empty" hidden>
+        <div class="qr-empty-icon">⚙️</div>
+        <h3>Set a receive address</h3>
+        <p>Add your Polygon or Solana wallet in Settings before you can accept payment.</p>
+        <button class="btn-primary" onclick="goToSettings()" style="margin-top: 8px;">
+            Open Settings
+        </button>
     </div>
-
-    <button class="copy-btn" onclick="copyToClipboard()">
-        📋 Copy Address
-    </button>
 </div>
-                </div>
 
-                <button class="btn-primary" onclick="goToWaitScreen()" style="margin-top: 40px; padding: 16px;">
-                    Confirm Payment <!-- I've Sent the Payment -->
-                </button>
+<div class="info-box" id="watchStatus" style="text-align: center;">
+    Waiting for the sender to pay
+</div>
+<div id="watchCountdown" style="text-align:center;color:var(--muted);font-size:0.85rem;margin:-8px 0 16px;">
+</div>
+
+<button class="btn-secondary" onclick="startAutoVerification()" style="padding: 16px;">
+    Check again
+</button>
 
                 <button class="btn-secondary" onclick="goBack()" style="padding: 16px;">
                     Change Network
@@ -1016,7 +1070,7 @@
             polygonWallet: DEFAULT_POLYGON_WALLET,
             solanaWallet: DEFAULT_SOLANA_WALLET,
             senderWallet: '',
-            expectedAmount: 50,
+            expectedAmount: 0,
             verifying: false,
             previousSection: 1
         };
@@ -1112,39 +1166,46 @@ function updatePaymentNetwork() {
     }
 }
 
-        function goToPaymentPage() {
-            generateQRCode();
-            goToSection(2);
-        }
-
-        function generateQRCode() {
-            const qrContainer = document.getElementById('qrcode');
-            qrContainer.innerHTML = '';
-            // Display receiving wallet address
-const addressDisplay = document.getElementById('displayWalletAddress');
-
-if (addressDisplay) {
-    addressDisplay.textContent = state.walletAddress || 'Wallet not configured';
+function goToPaymentPage() {
+    generateQRCode();
+    goToSection(2);
+    startWatchingFromCheckout();
 }
-            
-            try {
-                const qrData = state.network === 'polygon'
-                    ? `ethereum:${state.walletAddress}`
-                    : `solana:${state.walletAddress}`;
-                
-                new QRCode(qrContainer, {
-                    text: qrData,
-                    width: 250,
-                    height: 250,
-                    correctLevel: QRCode.CorrectLevel.H
-                });
-                
-                console.log('✓ QR Code generated');
-            } catch (error) {
-                console.error('QR error:', error);
-                showToast('Error generating QR code');
-            }
-        }
+
+function generateQRCode() {
+    const qrContainer = document.getElementById("qrcode");
+    const ready = document.getElementById("qrReady");
+    const empty = document.getElementById("qrEmpty");
+    const addressDisplay = document.getElementById("displayWalletAddress");
+
+    qrContainer.innerHTML = "";
+
+    if (!state.walletAddress) {
+        ready.hidden = true;
+        empty.hidden = false;
+        setWatchStatus("Add your wallet in Settings first");
+        return;
+    }
+
+    ready.hidden = false;
+    empty.hidden = true;
+
+    if (addressDisplay) {
+        addressDisplay.textContent = state.walletAddress;
+    }
+
+    try {
+        new QRCode(qrContainer, {
+            text: state.walletAddress,
+            width: 250,
+            height: 250,
+            correctLevel: QRCode.CorrectLevel.H
+        });
+    } catch (error) {
+        console.error("QR error:", error);
+        showToast("Error generating QR code");
+    }
+}
 
 function copyToClipboard() {
     if (!state.walletAddress) {
@@ -1198,49 +1259,179 @@ function copyToClipboard() {
             }, 500);
         }
 
-async function startAutoVerification() {
-  if (state.verifying) return;
-  if (!state.walletAddress) {
-    showToast("Wallet not configured");
-    return;
-  }
+const WATCH_MS = 15 * 60 * 1000;
 
-  state.verifying = true;
-state.watchStartedAt = Date.now() - 30 * 60 * 1000;
+function stopVerification() {
+    if (state.verifyTimer) {
+        clearInterval(state.verifyTimer);
+        state.verifyTimer = null;
+    }
+    if (state.countdownTimer) {
+        clearInterval(state.countdownTimer);
+        state.countdownTimer = null;
+    }
+    state.verifying = false;
+}
 
-  let attempts = 0;
-  const maxAttempts = 24; // 2 minutes at 5s
+function formatCountdown(ms) {
+    const s = Math.max(0, Math.ceil(ms / 1000));
+    const m = String(Math.floor(s / 60)).padStart(2, "0");
+    const r = String(s % 60).padStart(2, "0");
+    return m + ":" + r;
+}
 
-  const timer = setInterval(async () => {
-    attempts++;
-    try {
-      const url =
-        `${API}/verify?network=${encodeURIComponent(state.network)}` +
-        `&address=${encodeURIComponent(state.walletAddress)}` +
-        `&amount=${encodeURIComponent(state.expectedAmount)}` +
-        `&since=${state.watchStartedAt}`;
+function setCountdownText(text) {
+    const el = document.getElementById("watchCountdown");
+    if (el) el.textContent = text;
+}
 
-      const result = await (await fetch(url)).json();
+function startCountdown() {
+    if (state.countdownTimer) clearInterval(state.countdownTimer);
 
-      if (result.paid && result.tx) {
-        clearInterval(timer);
-        state.verifying = false;
-        const txLink = document.getElementById("txLink");
-        if (result.explorer && txLink) {
-          txLink.href = result.explorer;
+    function tick() {
+        const left = (state.watchEndsAt || 0) - Date.now();
+        if (left <= 0) {
+            stopVerification();
+            setWatchStatus("This checkout timed out");
+            setCountdownText("Tap Check again to keep waiting");
+            return;
         }
-        showSuccess(result.tx);
-      }
-    } catch (e) {
-      console.error(e);
+        setCountdownText("Time left " + formatCountdown(left));
     }
 
-    if (attempts >= maxAttempts) {
-      clearInterval(timer);
-      state.verifying = false;
-      showToast("No matching payment found yet");
+    tick();
+    state.countdownTimer = setInterval(tick, 1000);
+}
+
+function startWatchingFromCheckout() {
+    const isUsingDefaults =
+        state.polygonWallet === DEFAULT_POLYGON_WALLET &&
+        state.solanaWallet === DEFAULT_SOLANA_WALLET;
+
+    if (isUsingDefaults || !state.walletAddress) {
+        setWatchStatus("Add your wallet in Settings first");
+        setCountdownText("");
+        return;
     }
-  }, 5000);
+
+    const amount = parseFloat(document.getElementById("expectedAmount").value);
+    if (!amount || amount <= 0) {
+        setWatchStatus("Enter how much they should send");
+        setCountdownText("");
+        return;
+    }
+
+    state.expectedAmount = amount;
+    setWatchStatus("Waiting for the sender to pay");
+    startAutoVerification();
+}
+
+async function startAutoVerification() {
+    stopVerification();
+
+    if (!state.walletAddress || !state.expectedAmount) return;
+
+    state.verifying = true;
+    state.watchStartedAt = Date.now() - 30 * 60 * 1000;
+    state.watchEndsAt = Date.now() + WATCH_MS;
+    startCountdown();
+
+    async function check() {
+        if (Date.now() >= state.watchEndsAt) return;
+
+        try {
+            const url =
+                `${API}/verify?network=${encodeURIComponent(state.network)}` +
+                `&address=${encodeURIComponent(state.walletAddress)}` +
+                `&amount=${encodeURIComponent(state.expectedAmount)}` +
+                `&since=${state.watchStartedAt}`;
+
+            const result = await (await fetch(url)).json();
+            console.log("verify result", result);
+
+            if (result.paid && result.tx) {
+                stopVerification();
+                setCountdownText("");
+                showSuccess(result.tx);
+            }
+        } catch (e) {
+            console.error(e);
+            setWatchStatus("Can't check the payment right now");
+        }
+    }
+
+    check();
+    state.verifyTimer = setInterval(check, 5000);
+}
+
+function setWatchStatus(text) {
+    const el = document.getElementById("watchStatus");
+    if (el) el.textContent = text;
+}
+
+function startWatchingFromCheckout() {
+    const isUsingDefaults =
+        state.polygonWallet === DEFAULT_POLYGON_WALLET &&
+        state.solanaWallet === DEFAULT_SOLANA_WALLET;
+
+    if (isUsingDefaults || !state.walletAddress) {
+        setWatchStatus("Add your wallet in Settings first");
+        return;
+    }
+
+    const amount = parseFloat(document.getElementById("expectedAmount").value);
+    if (!amount || amount <= 0) {
+        setWatchStatus("Enter how much they should send");
+        return;
+    }
+
+    state.expectedAmount = amount;
+    setWatchStatus("Waiting for the sender to pay");
+    startAutoVerification();
+}
+
+async function startAutoVerification() {
+    stopVerification();
+
+    if (!state.walletAddress || !state.expectedAmount) return;
+
+    state.verifying = true;
+    state.watchStartedAt = Date.now() - 30 * 60 * 1000;
+
+    let attempts = 0;
+    const maxAttempts = 36;
+
+    async function check() {
+        attempts++;
+        try {
+            const url =
+                `${API}/verify?network=${encodeURIComponent(state.network)}` +
+                `&address=${encodeURIComponent(state.walletAddress)}` +
+                `&amount=${encodeURIComponent(state.expectedAmount)}` +
+                `&since=${state.watchStartedAt}`;
+
+            const result = await (await fetch(url)).json();
+            console.log("verify result", result);
+
+            if (result.paid && result.tx) {
+                stopVerification();
+                showSuccess(result.tx);
+                return;
+            }
+            setWatchStatus("Waiting for the sender to pay");
+        } catch (e) {
+            console.error(e);
+            setWatchStatus("Can't check the payment right now");
+        }
+
+        if (attempts >= maxAttempts) {
+            stopVerification();
+            setWatchStatus("No payment yet - tap Check again");
+        }
+    }
+
+    check();
+    state.verifyTimer = setInterval(check, 5000);
 }
 
         function showSuccess(txHash) {
@@ -1267,15 +1458,16 @@ state.watchStartedAt = Date.now() - 30 * 60 * 1000;
             goToSection(1);
         }
 
-        function goBack() {
-            goToSection(1);
-        }
+function goBack() {
+    stopVerification();
+    goToSection(1);
+}
 
-        function newPayment() {
-            console.log('newPayment called');
-            state.verifying = false;
-            goToSection(2);
-        }
+function newPayment() {
+    stopVerification();
+    goToSection(2);
+    startWatchingFromCheckout();
+}
 
         function addLog(message, type) {
             const log = document.getElementById('statusLog');
@@ -1344,23 +1536,21 @@ state.watchStartedAt = Date.now() - 30 * 60 * 1000;
             goToSection('settingsSection');
         }
 
-        function closeSettings() {
-            console.log('closeSettings called, previousSection:', state.previousSection);
-            
-            // Default to section 1 if previousSection is invalid
-            let targetSection = state.previousSection || 1;
-            
-            // Make sure it's not trying to go back to settings
-            if (targetSection === 'settingsSection') {
-                targetSection = 1;
-            }
-            
-            // SHOW settings button when leaving settings
-            document.querySelector('.settings-btn').style.display = 'flex';
-            
-            console.log('closeSettings: going to section', targetSection);
-            goToSection(targetSection);
-        }
+function closeSettings() {
+    let targetSection = state.previousSection || 1;
+    if (targetSection === "settingsSection") targetSection = 1;
+
+    document.querySelector(".settings-btn").style.display = "flex";
+
+    if (targetSection === 2) {
+        generateQRCode();
+        goToSection(2);
+        startWatchingFromCheckout();
+        return;
+    }
+
+    goToSection(targetSection);
+}
 
         function getCurrentSection() {
             // Check if settings is active
@@ -1404,17 +1594,20 @@ state.watchStartedAt = Date.now() - 30 * 60 * 1000;
             }
             
             // Update current wallet if on that network
-            if (state.network === 'polygon') {
-                state.walletAddress = state.polygonWallet;
-            } else {
-                state.walletAddress = state.solanaWallet;
-            }
-            
-            showToast('✅ Wallet settings saved!');
-            
-            setTimeout(() => {
-                closeSettings();
-            }, 1000);
+    if (state.network === "polygon") {
+        state.walletAddress = state.polygonWallet;
+    } else {
+        state.walletAddress = state.solanaWallet;
+    }
+
+    generateQRCode();
+    startWatchingFromCheckout();
+
+    showToast("✅ Wallet settings saved!");
+
+    setTimeout(() => {
+        closeSettings();
+    }, 800);
         }
 
         function goToSection(sectionId) {
