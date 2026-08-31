@@ -96,6 +96,92 @@
             margin-bottom: 32px;
             font-size: 0.95rem;
         }
+        /* Payment Countdown Styles */
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.7; }
+}
+
+.timer-wrap {
+    margin: 4px 0 20px;
+}
+
+.timer-wrap.hidden {
+    display: none;
+}
+
+.timer-pill {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    padding: 12px 16px;
+    border-radius: 14px;
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.08), rgba(124, 58, 237, 0.08));
+    border: 1px solid rgba(0, 212, 255, 0.28);
+    color: var(--primary);
+}
+
+.timer-clock {
+    font-family: 'JetBrains Mono', ui-monospace, monospace;
+    font-size: 1.35rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    font-variant-numeric: tabular-nums;
+}
+
+.timer-label {
+    font-size: 0.72rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+}
+.timer-wrap {
+    text-align: center;
+}
+
+.timer-inner {
+    width: 100%;
+    text-align: center;
+}
+
+.timer-clock {
+    text-align: center;
+}
+
+.timer-label {
+    text-align: center;
+}
+
+.timer-bar {
+    height: 4px;
+    margin-top: 10px;
+    border-radius: 99px;
+    background: rgba(148, 163, 184, 0.15);
+    overflow: hidden;
+}
+
+.timer-bar > span {
+    display: block;
+    height: 100%;
+    width: 100%;
+    border-radius: inherit;
+    background: linear-gradient(90deg, var(--primary), var(--secondary));
+    transform-origin: left center;
+    transition: transform 1s linear, background 0.3s ease;
+}
+
+.timer-wrap.urgent .timer-pill {
+    background: rgba(255, 107, 107, 0.1);
+    border-color: rgba(255, 107, 107, 0.4);
+    color: #ff6b6b;
+    animation: pulse 1s infinite;
+}
+
+.timer-wrap.urgent .timer-bar > span {
+    background: #ff6b6b;
+}
 
         .form-group {
             margin-bottom: 20px;
@@ -964,7 +1050,14 @@
 <div class="info-box" id="watchStatus" style="text-align: center;">
     Waiting for the sender to pay
 </div>
-<div id="watchCountdown" style="text-align:center;color:var(--muted);font-size:0.85rem;margin:-8px 0 16px;">
+<div class="timer-wrap hidden" id="watchCountdown">
+    <div class="timer-pill">
+        <div class="timer-inner">
+            <div class="timer-label">Payment window</div>
+            <div class="timer-clock" id="watchCountdownText">15:00</div>
+        </div>
+    </div>
+    <div class="timer-bar"><span id="watchCountdownBar"></span></div>
 </div>
 
 <button class="btn-secondary" onclick="startAutoVerification()" style="padding: 16px;">
@@ -977,26 +1070,29 @@
             </div>
         </div>
 
-        <!-- SECTION 3: Waiting for Payment -->
-        <div class="section" id="section3">
-            <div class="card">
-                <h1 style="font-size: 1.5rem; margin-bottom: 40px;">NoWalletConnect</h1>
+<!-- SECTION 3: Waiting for Payment -->
+<div class="section" id="section3">
+    <div class="card">
+        <h1 style="font-size: 1.5rem; margin-bottom: 40px;">NoWalletConnect</h1>
 
-                <div style="text-align: center; padding: 40px 0;">
-                    <div class="spinner" style="margin: 0 auto 20px;"></div>
-                    <h2 style="font-size: 1.3rem; margin-bottom: 16px;">Waiting for Payment</h2>
-                    <p style="color: var(--muted); font-size: 1.1rem;"><strong id="waitAmount">50 USDT</strong></p>
-                </div>
-
-                <div class="info-box" style="text-align: center; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: var(--success);">
-                    We're confirming your payment...
-                </div>
-
-                <button class="btn-secondary" onclick="goToPaymentPage()" style="margin-top: 40px; padding: 16px;">
-                    Change Amount
-                </button>
-            </div>
+        <div style="text-align: center; padding: 40px 0;">
+            <div class="spinner" style="margin: 0 auto 20px;"></div>
+            <h2 style="font-size: 1.3rem; margin-bottom: 16px;">Waiting for Payment</h2>
+            <p style="color: var(--muted); font-size: 1.1rem;"><strong id="waitAmount">50 USDT</strong></p>
         </div>
+
+        <!-- TIMER HERE -->
+        <div id="watchCountdown3" style="text-align: center; color: var(--primary); font-size: 1.2rem; font-weight: 600; margin: 20px 0; font-family: 'JetBrains Mono', monospace; letter-spacing: 2px;"></div>
+
+        <div class="info-box" style="text-align: center; background: rgba(16, 185, 129, 0.1); border-color: rgba(16, 185, 129, 0.3); color: var(--success);">
+            We're confirming your payment...
+        </div>
+
+        <button class="btn-secondary" onclick="goToPaymentPage()" style="margin-top: 40px; padding: 16px;">
+            Change Amount
+        </button>
+    </div>
+</div>
 
         <!-- SECTION 4: Success -->
         <div class="section" id="section4">
@@ -1281,8 +1377,30 @@ function formatCountdown(ms) {
 }
 
 function setCountdownText(text) {
-    const el = document.getElementById("watchCountdown");
-    if (el) el.textContent = text;
+    const wrap = document.getElementById("watchCountdown");
+    const textEl = document.getElementById("watchCountdownText");
+    const bar = document.getElementById("watchCountdownBar");
+    const el2 = document.getElementById("watchCountdown3");
+
+    const left = Math.max(0, (state.watchEndsAt || 0) - Date.now());
+    const urgent = left <= 5 * 60 * 1000 && left > 0;
+    const clock = text ? formatCountdown(left) : "";
+
+    if (wrap) {
+        if (!text) {
+            wrap.classList.add("hidden");
+        } else {
+            wrap.classList.remove("hidden");
+            wrap.classList.toggle("urgent", urgent);
+            if (textEl) textEl.textContent = clock;
+            if (bar) bar.style.transform = "scaleX(" + (left / WATCH_MS) + ")";
+        }
+    }
+
+    if (el2) {
+        el2.textContent = text ? ("⏱️ " + clock) : "";
+        el2.style.color = urgent ? "#ff6b6b" : "var(--primary)";
+    }
 }
 
 function startCountdown() {
@@ -1292,15 +1410,41 @@ function startCountdown() {
         const left = (state.watchEndsAt || 0) - Date.now();
         if (left <= 0) {
             stopVerification();
-            setWatchStatus("This checkout timed out");
-            setCountdownText("Tap Check again to keep waiting");
+            setWatchStatus("⏰ Payment expired");
+            setCountdownText("");
+            showExpiredPayment();
             return;
         }
-        setCountdownText("Time left " + formatCountdown(left));
+        setCountdownText("⏱️ Payment expires in " + formatCountdown(left));
     }
 
     tick();
     state.countdownTimer = setInterval(tick, 1000);
+}
+
+function showExpiredPayment() {
+    const watchStatus = document.getElementById("watchStatus");
+    if (watchStatus) {
+        watchStatus.innerHTML = `
+            <div style="text-align: center;">
+                <div style="font-size: 2rem; margin-bottom: 12px;">⏰</div>
+                <div style="font-size: 1.1rem; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">
+                    Payment Expired
+                </div>
+                <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">
+                    Generate a new payment to continue
+                </div>
+                <button onclick="goBack()" style="padding: 12px 24px; background: var(--primary); color: #0f1419; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                    Generate New Payment
+                </button>
+            </div>
+        `;
+    }
+}
+
+function setWatchStatus(text) {
+    const el = document.getElementById("watchStatus");
+    if (el) el.textContent = text;
 }
 
 function startWatchingFromCheckout() {
@@ -1336,72 +1480,18 @@ async function startAutoVerification() {
     state.watchEndsAt = Date.now() + WATCH_MS;
     startCountdown();
 
-    async function check() {
-        if (Date.now() >= state.watchEndsAt) return;
-
-        try {
-            const url =
-                `${API}/verify?network=${encodeURIComponent(state.network)}` +
-                `&address=${encodeURIComponent(state.walletAddress)}` +
-                `&amount=${encodeURIComponent(state.expectedAmount)}` +
-                `&since=${state.watchStartedAt}`;
-
-            const result = await (await fetch(url)).json();
-            console.log("verify result", result);
-
-            if (result.paid && result.tx) {
-                stopVerification();
-                setCountdownText("");
-                showSuccess(result.tx);
-            }
-        } catch (e) {
-            console.error(e);
-            setWatchStatus("Can't check the payment right now");
-        }
-    }
-
-    check();
-    state.verifyTimer = setInterval(check, 5000);
-}
-
-function setWatchStatus(text) {
-    const el = document.getElementById("watchStatus");
-    if (el) el.textContent = text;
-}
-
-function startWatchingFromCheckout() {
-    const isUsingDefaults =
-        state.polygonWallet === DEFAULT_POLYGON_WALLET &&
-        state.solanaWallet === DEFAULT_SOLANA_WALLET;
-
-    if (isUsingDefaults || !state.walletAddress) {
-        setWatchStatus("Add your wallet in Settings first");
-        return;
-    }
-
-    const amount = parseFloat(document.getElementById("expectedAmount").value);
-    if (!amount || amount <= 0) {
-        setWatchStatus("Enter how much they should send");
-        return;
-    }
-
-    state.expectedAmount = amount;
-    setWatchStatus("Waiting for the sender to pay");
-    startAutoVerification();
-}
-
-async function startAutoVerification() {
-    stopVerification();
-
-    if (!state.walletAddress || !state.expectedAmount) return;
-
-    state.verifying = true;
-    state.watchStartedAt = Date.now() - 30 * 60 * 1000;
-
+    const maxAttempts = Math.ceil(WATCH_MS / 5000);
     let attempts = 0;
-    const maxAttempts = 36;
 
     async function check() {
+        if (Date.now() >= state.watchEndsAt) {
+            stopVerification();
+            setWatchStatus("⏰ Payment expired");
+            setCountdownText("");
+            showExpiredPayment();
+            return;
+        }
+
         attempts++;
         try {
             const url =
@@ -1415,6 +1505,7 @@ async function startAutoVerification() {
 
             if (result.paid && result.tx) {
                 stopVerification();
+                setCountdownText("");
                 showSuccess(result.tx);
                 return;
             }
