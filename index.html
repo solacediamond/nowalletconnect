@@ -1747,20 +1747,40 @@ function startCountdown() {
 function showExpiredPayment() {
     const watchStatus = document.getElementById("watchStatus");
     if (watchStatus) {
-        watchStatus.innerHTML = `
-            <div style="text-align: center;">
-                <div style="font-size: 2rem; margin-bottom: 12px;">⏰</div>
-                <div style="font-size: 1.1rem; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">
-                    Payment Expired
+        // ONLY for merchant gateway mode
+        if (GATEWAY.isGatewayMode) {
+            watchStatus.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 12px;">⏰</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">
+                        Payment Expired
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">
+                        This payment request has expired. Returning to merchant...
+                    </div>
                 </div>
-                <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">
-                    Generate a new payment to continue
+            `;
+            // Auto redirect back to merchant
+            setTimeout(() => {
+                window.location.href = GATEWAY.returnUrl || window.history.back();
+            }, 2000);
+        } else {
+            // NORMAL CHECKOUT - keep original behavior (Generate New Payment)
+            watchStatus.innerHTML = `
+                <div style="text-align: center;">
+                    <div style="font-size: 2rem; margin-bottom: 12px;">⏰</div>
+                    <div style="font-size: 1.1rem; font-weight: 600; color: #ff6b6b; margin-bottom: 8px;">
+                        Payment Expired
+                    </div>
+                    <div style="font-size: 0.85rem; color: var(--muted); margin-bottom: 16px;">
+                        Generate a new payment to continue
+                    </div>
+                    <button onclick="goBack()" style="padding: 12px 24px; background: var(--primary); color: #0f1419; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
+                        Generate New Payment
+                    </button>
                 </div>
-                <button onclick="goBack()" style="padding: 12px 24px; background: var(--primary); color: #0f1419; border: none; border-radius: 8px; cursor: pointer; font-weight: 600;">
-                    Generate New Payment
-                </button>
-            </div>
-        `;
+            `;
+        }
     }
 }
 
