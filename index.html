@@ -1024,12 +1024,12 @@
 
 <div class="qr-box" id="qrBox">
     <div id="qrReady">
-        <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;">
+        <div class="qr-hint" style="margin-bottom: 20px; font-size: 0.9rem;" id="showSenderText">
             Show this to the sender
         </div>
         <div id="qrcode"></div>
         <div class="address-display">
-            <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 600;">
+            <div style="font-size: 0.75rem; color: var(--muted); text-transform: uppercase; font-weight: 600;" id="addressLabel">
                 Receiving Address
             </div>
             <div class="address-text" id="displayWalletAddress">—</div>
@@ -1116,16 +1116,27 @@
                     </a>
                 </div>
 
-                <div style="text-align: center; margin-top: 40px;">
-                    <p style="color: var(--muted); font-size: 0.9rem;">Powered by NoWalletConnect</p>
-                </div>
-
-                <button class="btn-primary" onclick="newPayment()" style="margin-top: 40px; padding: 16px;">
-                    Accept Another Payment
-                </button>
-            </div>
-        </div>
+                 <!-- Redirect timer (shown in gateway mode) -->
+    <div id="redirectTimer" style="display: none; text-align: center; margin: 30px 0; padding: 20px; background: rgba(0, 212, 255, 0.05); border-radius: 10px;">
+      <p style="color: var(--muted); margin-bottom: 10px;">Redirecting to merchant in...</p>
+      <div style="font-size: 2.5rem; font-weight: 800; color: var(--primary); font-family: 'JetBrains Mono', monospace;" id="redirectCountdown">10</div>
     </div>
+
+    <div style="text-align: center; margin-top: 40px;">
+      <p style="color: var(--muted); font-size: 0.9rem;">Powered by NoWalletConnect</p>
+    </div>
+
+    <!-- ✅ Normal button (shown when NOT gateway mode) -->
+    <button class="btn-primary" id="acceptAnotherBtn" onclick="newPayment()" style="margin-top: 40px; padding: 16px;">
+      Accept Another Payment
+    </button>
+
+    <!-- ✅ Return to merchant button (shown only in gateway mode, clickable) -->
+    <button class="btn-primary" id="returnMerchantBtn" onclick="returnToMerchant()" style="margin-top: 40px; padding: 16px; display: none;">
+      Return to Merchant Website
+    </button>
+  </div>
+</div>
 
     <div class="toast" id="toast"></div>
 
@@ -1156,6 +1167,18 @@
         const USDT_POLYGON = '0xc2132D05D31c914a87C6611C10748AEb04B58e8F';
         const USDT_SOLANA = 'Es9vMFrzaCERmJfrF4H2FYD4KCoNkY11McCe8BenwNYB';
 
+        // 💜 Google Sheets Configuration
+        const SHEETS = {
+          NWC_SHEET_ID: '1D1AmH676-RdnBbE9F0i0E5lNvv0y5VZlnQZ_eL5dx1Q',
+          NWC_API_KEY: 'AIzaSyBin_r5W1VlRYa-2P3lRq5MWP2_ctd_R3c',
+          NWC_MERCHANTS: 'MERCHANTS!A:G',
+          NWC_PAYMENTS: 'PAYMENTS!A:H'
+        };
+
+// DEFAULT WALLET ADDRESSES...
+
+        
+
         // DEFAULT WALLET ADDRESSES (can be changed in settings)
         const DEFAULT_POLYGON_WALLET = '';
         const DEFAULT_SOLANA_WALLET = '';
@@ -1170,6 +1193,305 @@
             verifying: false,
             previousSection: 1
         };
+
+        // 💜 Payment Gateway Mode
+        const GATEWAY = {
+          merchantId: null,
+          amount: null,
+          returnUrl: null,
+          isGatewayMode: false,
+        };
+
+        
+
+        // ═════════════════════════════════════════
+        // 💜 GATEWAY MODE FUNCTIONS
+        // ═════════════════════════════════════════
+
+function detectGatewayMode() {
+  const params = new URLSearchParams(window.location.search);
+  const merchantId = params.get('merchant');
+  const amount = params.get('amount');
+  const network = params.get('network') || 'polygon';
+
+  if (!merchantId) {
+    return false;
+  }
+
+  if (!amount) {
+    showMerchantError('This payment link is no longer valid or the merchant ID doesn\'t exist.');
+    return false;
+  }
+
+  if (isNaN(parseFloat(amount)) || parseFloat(amount) <= 0) {
+    showMerchantError('This payment link is no longer valid or the merchant ID doesn\'t exist.');
+    return false;
+  }
+
+  GATEWAY.merchantId = merchantId;
+  GATEWAY.amount = parseFloat(amount);
+  GATEWAY.isGatewayMode = true;  // ✅ Don't set returnUrl here
+  console.log('🎯 GATEWAY MODE DETECTED', GATEWAY);
+  loadMerchantForGateway(merchantId, GATEWAY.amount, network);
+  return true;
+}
+
+
+// Modern error display
+function showMerchantError(message) {
+  const container = document.querySelector('.container');
+  
+  container.innerHTML = `
+    <div class="card" style="text-align: center; padding: 60px 32px;">
+      <div style="font-size: 4rem; margin-bottom: 24px;">❌</div>
+      
+      <h1 style="font-size: 1.8rem; margin-bottom: 12px; background: none; -webkit-text-fill-color: unset; color: #ef4444;">
+        Payment Link Invalid
+      </h1>
+      
+      <p style="color: var(--muted); font-size: 1.1rem; margin-bottom: 32px; line-height: 1.6;">
+        ${message}
+      </p>
+      
+      <div style="background: rgba(239, 68, 68, 0.05); border: 1px solid rgba(239, 68, 68, 0.3); border-radius: 12px; padding: 20px;">
+        <p style="color: var(--muted); font-size: 0.9rem;">
+          💡 Contact the merchant for a valid payment link.
+        </p>
+      </div>
+      
+      <p style="color: var(--muted); font-size: 0.85rem; margin-top: 40px;">
+        Powered by NoWalletConnect
+      </p>
+    </div>
+  `;
+}
+
+async function loadMerchantForGateway(merchantId, amount, network) {
+  try {
+    const merchants = await fetchMerchants();
+    const merchant = merchants[merchantId];
+
+    if (!merchant) {
+      showMerchantError('This payment link is no longer valid or the merchant ID doesn\'t exist.');
+      return;
+    }
+
+    // ✅ Get return URL from Google Sheet
+    GATEWAY.returnUrl = merchant.webhookUrl;  // ✅ Uses column 6 from sheet
+    GATEWAY.merchantId = merchantId;
+    GATEWAY.amount = amount;
+    GATEWAY.isGatewayMode = true;
+
+    // ✅ Use network from URL
+    state.network = network;
+    state.walletAddress = network === 'polygon' ? merchant.polygonWallet : merchant.solanaWallet;
+    
+    // ✅ UPDATE UI WITH NETWORK INFO
+    updatePaymentNetwork();
+
+
+    console.log('✅ Merchant loaded:', merchant);
+    state.merchantId = merchantId;
+    state.expectedAmount = amount;
+    state.polygonWallet = merchant.polygonWallet;
+    state.solanaWallet = merchant.solanaWallet;
+
+    // Update UI
+    document.getElementById('expectedAmount').value = amount;
+    document.getElementById('expectedAmount').disabled = true;
+
+    // Regenerate QR code with correct wallet for network
+    generateQRCode(state.walletAddress);
+
+    const showSenderText = document.getElementById('showSenderText');
+    if (showSenderText) {
+      showSenderText.textContent = 'Complete your payment below';
+      showSenderText.style.display = 'block';
+    }
+
+    const addressLabel = document.getElementById('addressLabel');
+    if (addressLabel) {
+      addressLabel.textContent = 'Send USDT to:';
+      addressLabel.style.display = 'block';
+    }
+
+    // Hide buttons in gateway mode
+    const settingsBtn = document.querySelector('.settings-btn');
+    if (settingsBtn) {
+      settingsBtn.style.display = 'none';
+    }
+
+    const changeNetworkBtn = document.querySelector('button[onclick*="goBack"]');
+    if (changeNetworkBtn) {
+      changeNetworkBtn.style.display = 'none';
+    }
+
+    goToSection(2);
+    
+    // ✅ Wait a moment then start verification
+    setTimeout(() => {
+      startAutoVerification();
+    }, 500);
+
+  } catch (err) {
+    console.error('Error loading merchant:', err);
+    alert('❌ Error loading merchant');
+  }
+}
+
+        // Redirect to merchant after payment
+        function redirectToMerchant(txHash) {
+          if (!GATEWAY.isGatewayMode || !GATEWAY.returnUrl) return;
+
+          const redirectUrl = new URL(GATEWAY.returnUrl);
+          redirectUrl.searchParams.append('payment_id', 'pay_' + Date.now());
+          redirectUrl.searchParams.append('tx_hash', txHash);
+          redirectUrl.searchParams.append('amount', GATEWAY.amount);
+          redirectUrl.searchParams.append('merchant', GATEWAY.merchantId);
+          redirectUrl.searchParams.append('network', state.network);
+          redirectUrl.searchParams.append('status', 'success');
+
+          console.log('🔄 Redirecting to merchant:', redirectUrl.toString());
+          setTimeout(() => { window.location.href = redirectUrl.toString(); }, 3000);
+        }
+
+async function recordPaymentToSheet(paymentData) {
+  try {
+    console.log('📝 Recording payment:', paymentData);
+
+    // ✅ CORRECT Format
+    const formUrl = 'https://docs.google.com/forms/d/14seQRN5oWOxqlYGJnaOvMQl6aGW02DFMupP2WRai66A/formResponse';
+
+    const formData = new FormData();
+    formData.append('entry.1529556014', 'completed');                              // status
+    formData.append('entry.1426755421', paymentData.payment_id || 'pay_' + Date.now());  // payment_id
+    formData.append('entry.129872802', paymentData.merchant_id || '');             // merchant_id
+    formData.append('entry.654384322', paymentData.amount);                        // amount
+    formData.append('entry.187968983', paymentData.tx_hash);                       // tx_hash
+    formData.append('entry.481009506', paymentData.network || 'polygon');          // network
+    formData.append('entry.475850415', paymentData.return_url || '');              // return_url
+
+    console.log('📤 Sending to form...');
+
+    await fetch(formUrl, {
+      method: 'POST',
+      body: formData,
+      mode: 'no-cors'
+    });
+
+    console.log('✅ Payment recorded to Google Form!');
+    return { success: true };
+  } catch (err) {
+    console.error('❌ Error:', err);
+  }
+}
+
+async function fetchPayments() {
+  try {
+    // ✅ NEW Sheet ID for PAYMENTS
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/1W6r8bcMl41HvYF2PJ0OyEicg11bcv1DjGNkQMSH85qw/values/'PAYMENTS'!A:H?key=${SHEETS.NWC_API_KEY}`;
+    
+    console.log('📥 Fetching from:', url);
+    
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.values) return [];
+
+    const payments = [];
+    const rows = data.values.slice(1);
+
+    for (const row of rows) {
+      if (!row[2]) continue;
+      payments.push({
+        timestamp: row[0],
+        status: row[1],
+        payment_id: row[2],
+        merchant_id: row[3],
+        amount: row[4],
+        tx_hash: row[5],
+        network: row[6],
+        return_url: row[7],
+      });
+    }
+
+    return payments;
+  } catch (err) {
+    console.error('❌ Error fetching payments:', err);
+    return [];
+  }
+}
+
+async function fetchMerchants() {
+  try {
+    const url = `https://sheets.googleapis.com/v4/spreadsheets/${SHEETS.NWC_SHEET_ID}/values/${SHEETS.NWC_MERCHANTS}?key=${SHEETS.NWC_API_KEY}`;
+    const response = await fetch(url);
+    const data = await response.json();
+
+    if (!data.values || data.values.length < 2) return {};
+
+    const merchants = {};
+    const rows = data.values.slice(1);
+
+    for (const row of rows) {
+      // Your sheet order:
+      // [0]=created_at, [1]=merchant_id, [2]=name, [3]=polygon_wallet, 
+      // [4]=solana_wallet, [5]=email, [6]=webhook_url
+      
+      const merchantId = row[1];
+      if (!merchantId) continue;
+      
+      merchants[merchantId] = {
+        id: row[1],              // ✅ merchant_id
+        name: row[2] || '',      // ✅ name
+        polygonWallet: row[3] || '',    // ✅ polygon_wallet
+        solanaWallet: row[4] || '',     // ✅ solana_wallet
+        email: row[5] || '',     // ✅ email
+        webhookUrl: row[6] || '',       // ✅ webhook_url
+      };
+    }
+
+    return merchants;
+  } catch (err) {
+    console.error('❌ Error fetching merchants:', err);
+    return {};
+  }
+}
+
+// ✅ Redirect countdown timer
+function startRedirectCountdown() {
+  let seconds = 10;
+  
+  const timerDiv = document.getElementById('redirectTimer');
+  const countdownEl = document.getElementById('redirectCountdown');
+  const acceptBtn = document.getElementById('acceptAnotherBtn');
+  const returnBtn = document.getElementById('returnMerchantBtn');
+  
+  if (!timerDiv) return;
+  
+  // Show timer, hide normal button
+  timerDiv.style.display = 'block';
+  if (acceptBtn) acceptBtn.style.display = 'none';
+  if (returnBtn) returnBtn.style.display = 'block';
+  
+  const interval = setInterval(() => {
+    countdownEl.textContent = seconds;
+    
+    if (seconds <= 0) {
+      clearInterval(interval);
+      returnToMerchant();
+    }
+    
+    seconds--;
+  }, 1000);
+}
+
+// ✅ Return to merchant website
+function returnToMerchant() {
+  if (GATEWAY.returnUrl) {
+    window.location.href = GATEWAY.returnUrl;
+  }
+}
 
         function loadFromLocalStorage() {
             const savedPolygon = localStorage.getItem('polygonWallet');
@@ -1466,7 +1788,7 @@ function startWatchingFromCheckout() {
     }
 
     state.expectedAmount = amount;
-    setWatchStatus("Waiting for the sender to pay");
+    setWatchStatus("Awaiting your payment...");
     startAutoVerification();
 }
 
@@ -1509,7 +1831,7 @@ async function startAutoVerification() {
                 showSuccess(result.tx);
                 return;
             }
-            setWatchStatus("Waiting for the sender to pay");
+            setWatchStatus("Awaiting your payment...");
         } catch (e) {
             console.error(e);
             setWatchStatus("Can't check the payment right now");
@@ -1525,25 +1847,46 @@ async function startAutoVerification() {
     state.verifyTimer = setInterval(check, 5000);
 }
 
-        function showSuccess(txHash) {
-            console.log('showSuccess called with txHash:', txHash);
-            
-            // Display amount
-            document.getElementById('finalAmount').textContent = state.expectedAmount + ' USDT';
-            
-            // Display transaction hash with explorer link
-            const explorerUrl = state.network === 'polygon'
-                ? `https://polygonscan.com/tx/${txHash}`
-                : `https://solscan.io/tx/${txHash}`;
-            
-            const txLink = document.getElementById('txLink');
-            txLink.href = explorerUrl;
-            txLink.textContent = txHash.substring(0, 20) + '...';
-            txLink.title = txHash;
-            
-            console.log('Explorer URL:', explorerUrl);
-            goToSection(4);
-        }
+async function showSuccess(txHash) {
+  console.log('showSuccess called with txHash:', txHash);
+  
+  // Display amount
+  document.getElementById('finalAmount').textContent = state.expectedAmount + ' USDT';
+  
+  // Display transaction hash with explorer link
+  const explorerUrl = state.network === 'polygon'
+    ? `https://polygonscan.com/tx/${txHash}`
+    : `https://solscan.io/tx/${txHash}`;
+  
+  const txLink = document.getElementById('txLink');
+  txLink.href = explorerUrl;
+  txLink.textContent = txHash.substring(0, 20) + '...';
+  txLink.title = txHash;
+  
+  console.log('Explorer URL:', explorerUrl);
+
+  // ✅ RECORD PAYMENT TO DATABASE
+  try {
+    const recorded = await recordPaymentToSheet({
+      payment_id: 'pay_' + Date.now(),
+      merchant_id: GATEWAY.merchantId || state.merchantId || '',
+      amount: state.expectedAmount,
+      tx_hash: txHash,
+      network: state.network,
+      return_url: GATEWAY.returnUrl || '',
+    });
+    console.log('✅ Payment recorded to database:', recorded);
+  } catch (e) {
+    console.error('❌ Database error:', e);
+  }
+
+  goToSection(4);
+  
+  // Start redirect countdown
+  if (GATEWAY.isGatewayMode) {
+    startRedirectCountdown();
+  }
+}
 
         function goToSetup() {
             goToSection(1);
@@ -1730,9 +2073,14 @@ function closeSettings() {
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
 
-loadFromLocalStorage();
-loadFromCookies();
-updatePaymentNetwork();
+// Initialize
+window.addEventListener('load', () => {
+  if (!detectGatewayMode()) {
+    loadFromLocalStorage();
+    loadFromCookies();
+    updatePaymentNetwork();
+  }
+});
     </script>
 </body>
 </html>
